@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="SportHub - tìm và đặt sân thể thao nhanh chóng"
+    />
+    <title>SportHub</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a
+        class="brand"
+        href="#"
+        data-route="home"
+        aria-label="SportHub - trang chủ"
+      >
+        <span class="brand-mark">S</span><span>Sport<span>Hub</span></span>
+      </a>
+      <nav class="nav" aria-label="Điều hướng chính">
+        <button class="nav-link active" data-route="home">Khám phá sân</button>
+        <button class="nav-link auth-only renter-only" data-route="bookings">
+          Lịch của tôi
+        </button>
+        <button class="nav-link auth-only owner-only" data-route="owner">
+          Quản lý sân
+        </button>
+        <button class="nav-link auth-only admin-only" data-route="admin">
+          Quản trị
+        </button>
+      </nav>
+      <div class="account-area">
+        <button id="loginButton" class="button button-ghost">Đăng nhập</button>
+        <div id="userMenu" class="user-menu hidden">
+          <span class="avatar" id="userAvatar">A</span>
+          <div>
+            <strong id="userName"></strong><small id="userRole"></small>
+          </div>
+          <button
+            id="logoutButton"
+            class="icon-button"
+            title="Đăng xuất"
+            aria-label="Đăng xuất"
+          >
+            ↗
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section id="homeView" class="view active">
+        <section class="hero">
+          <div class="hero-orb orb-one"></div>
+          <div class="hero-orb orb-two"></div>
+          <div class="hero-content">
+            <span class="eyebrow"><i></i> Đặt sân dễ dàng</span>
+            <p>
+              Tìm sân phù hợp, xem lịch trống theo thời gian thực và hoàn tất
+              đặt sân nhanh chóng, thuận tiện.
+            </p>
+            <form id="searchForm" class="search-panel">
+              <label
+                ><span>Môn thể thao</span
+                ><select id="sportFilter">
+                  <option value="">Tất cả môn</option>
+                  <option>Cầu lông</option>
+                  <option>Bóng đá</option>
+                  <option>Pickleball</option>
+                  <option>Tennis</option>
+                  <option>Bóng rổ</option>
+                </select></label
+              >
+              <label
+                ><span>Khu vực</span
+                ><input id="wardFilter" placeholder="Quận/phường/xã"
+              /></label>
+              <label
+                ><span>Từ khóa</span
+                ><input id="keywordFilter" placeholder="Tên sân, địa chỉ..."
+              /></label>
+              <label
+                ><span>Ngày chơi</span><input id="dateFilter" type="date"
+              /></label>
+              <label
+                ><span>Từ giờ</span
+                ><input id="startFilter" type="time" step="1800" /></label
+              ><label
+                ><span>Đến giờ</span
+                ><input id="endFilter" type="time" step="1800"
+              /></label>
+              <button class="button button-primary" type="submit">
+                Tìm sân →
+              </button>
+            </form>
+            <p class="search-help">
+              Chọn cả ngày, giờ bắt đầu và kết thúc để tìm sân trống. Có thể bỏ
+              giờ để xem tất cả sân.
+            </p>
+            <div class="hero-stats">
+              <div><strong>30 phút</strong><span>Mỗi khung giờ</span></div>
+              <div>
+                <strong>Minh bạch</strong><span>Giá theo khung giờ</span>
+              </div>
+              <div><strong>24/7</strong><span>Đặt sân online</span></div>
+            </div>
+          </div>
+          <div class="hero-visual" aria-hidden="true">
+            <div class="court-lines"><i></i><b></b></div>
+            <div class="availability-pill"><span></span> Xem lịch từng sân</div>
+          </div>
+        </section>
+
+        <section class="content-section">
+          <div class="section-heading">
+            <div>
+              <span class="eyebrow dark">LỊCH TRỐNG · GIÁ RÕ RÀNG</span>
+              <h2>Tìm sân hợp với bạn</h2>
+            </div>
+            <p id="resultCount">Đang tải danh sách sân...</p>
+          </div>
+          <div id="pagination" class="action-row pagination"></div>
+          <div id="venueGrid" class="venue-grid"></div>
+          <div id="venueEmpty" class="empty-state hidden">
+            <span>⌕</span>
+            <h3>Chưa tìm thấy sân phù hợp</h3>
+            <p>Thử đổi môn thể thao hoặc khu vực tìm kiếm.</p>
+          </div>
+        </section>
+      </section>
+
+      <section id="bookingsView" class="view dashboard-view">
+        <div class="page-heading">
+          <div>
+            <span class="eyebrow dark">NGƯỜI THUÊ</span>
+            <h1>Lịch đặt của tôi</h1>
+            <p>Quản lý các buổi chơi sắp tới và lịch sử đặt sân.</p>
+          </div>
+          <button class="button button-primary" data-route="home">
+            + Đặt sân mới
+          </button>
+        </div>
+        <div id="myBookingList" class="booking-list"></div>
+      </section>
+
+      <section id="ownerView" class="view dashboard-view">
+        <div class="page-heading">
+          <div>
+            <span class="eyebrow dark">CHỦ SÂN</span>
+            <h1>Tổng quan vận hành</h1>
+            <p>Duyệt yêu cầu, theo dõi lịch sân và doanh thu.</p>
+          </div>
+          <button class="button button-primary" data-action="new-venue">
+            + Đăng ký cụm sân
+          </button>
+        </div>
+        <div id="ownerStats" class="stat-grid"></div>
+        <div class="panel">
+          <h2>Doanh thu theo tháng</h2>
+          <div id="revenueList"></div>
+        </div>
+        <div class="panel owner-venues-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Cụm sân của tôi</h2>
+              <p>Thông tin và trạng thái kiểm duyệt</p>
+            </div>
+          </div>
+          <div id="ownerVenueList" class="stack-list"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Yêu cầu đặt sân</h2>
+              <p>Xử lý các yêu cầu mới từ người chơi</p>
+            </div>
+            <select id="ownerStatusFilter">
+              <option value="">Tất cả trạng thái</option>
+              <option value="PENDING">Chờ duyệt</option>
+              <option value="CONFIRMED">Đã xác nhận</option>
+              <option value="REJECTED">Đã từ chối</option>
+            </select>
+          </div>
+          <div id="ownerBookingList" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <section id="adminView" class="view dashboard-view">
+        <div class="page-heading">
+          <div>
+            <span class="eyebrow dark">QUẢN TRỊ VIÊN</span>
+            <h1>Trung tâm điều hành</h1>
+            <p>Kiểm duyệt cụm sân và quản lý người dùng.</p>
+          </div>
+        </div>
+        <div id="adminStats" class="stat-grid"></div>
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Cụm sân chờ kiểm duyệt</h2>
+              <p>Xem hồ sơ trước khi duyệt hoặc từ chối</p>
+            </div>
+            <button class="button button-ghost" data-action="refresh-admin">
+              Tải lại
+            </button>
+          </div>
+          <div id="adminQueue" class="stack-list"></div>
+        </div>
+        <div class="admin-grid">
+          <div class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Tất cả cụm sân</h2>
+                <p>Theo dõi trạng thái hoạt động</p>
+              </div>
+            </div>
+            <div id="adminVenueList" class="stack-list"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Người dùng gần đây</h2>
+                <p>Quản lý trạng thái tài khoản</p>
+              </div>
+            </div>
+            <div id="adminUserList" class="stack-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div
+      id="authModal"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="authTitle"
+    >
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-card auth-card">
+        <button class="modal-close" data-close-modal aria-label="Đóng">×</button
+        ><span class="eyebrow dark">SPORTHUB</span>
+        <h2 id="authTitle">Đăng nhập</h2>
+        <div class="tabs">
+          <button class="button button-primary" data-auth="login">
+            Đăng nhập</button
+          ><button class="button button-ghost" data-auth="register">
+            Đăng ký
+          </button>
+        </div>
+        <form id="loginForm">
+          <label
+            >Email<input
+              name="email"
+              type="email"
+              required
+              autocomplete="email" /></label
+          ><label
+            >Mật khẩu<input
+              name="password"
+              type="password"
+              required
+              autocomplete="current-password" /></label
+          ><button class="button button-primary full">Đăng nhập</button>
+        </form>
+        <form id="registerForm" class="hidden">
+          <label
+            >Họ tên<input
+              name="fullName"
+              required
+              minlength="2"
+              maxlength="120" /></label
+          ><label>Email<input name="email" type="email" required /></label
+          ><label>Số điện thoại<input name="phone" maxlength="20" /></label
+          ><label
+            >Mật khẩu (ít nhất 8 ký tự)<input
+              name="password"
+              type="password"
+              minlength="8"
+              required
+              autocomplete="new-password" /></label
+          ><label
+            >Loại tài khoản<select name="role">
+              <option value="RENTER">Người thuê sân</option>
+              <option value="OWNER">Chủ sân / người cho thuê</option>
+            </select></label
+          ><button class="button button-primary full">Tạo tài khoản</button>
+        </form>
+        <p class="form-error" role="alert"></p>
+      </div>
+    </div>
+    <div
+      id="detailModal"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="detailTitle"
+    >
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-card schedule-card">
+        <button class="modal-close" data-close-modal aria-label="Đóng">
+          ×
+        </button>
+        <div id="detailContent"></div>
+      </div>
+    </div>
+    <div
+      id="editorModal"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="editorTitle"
+    >
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-card editor-card">
+        <button class="modal-close" data-close-editor aria-label="Đóng">
+          ×
+        </button>
+        <div id="editorContent"></div>
+        <p class="form-error" role="alert"></p>
+      </div>
+    </div>
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/schedule-utils.js" defer></script>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

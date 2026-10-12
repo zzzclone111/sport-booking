@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sporthub-seed
+  namespace: sporthub
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: cmc-registry
+      containers:
+        - name: seed
+          image: registry-01.cloud.cmctelecom.vn/PROJECT/sporthub-backend:1.1.0
+          command: ["node", "src/scripts/seed.js"]
+          envFrom:
+            - configMapRef: { name: sporthub-config }
+            - secretRef: { name: sporthub-secrets }

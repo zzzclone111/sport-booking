@@ -1,0 +1,16 @@
+spec:
+  template:
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+      containers:
+        - name: frontend
+          volumeMounts:
+            - name: nginx-tmp
+              mountPath: /tmp
+      volumes:
+        - name: nginx-tmp
+          emptyDir: {}

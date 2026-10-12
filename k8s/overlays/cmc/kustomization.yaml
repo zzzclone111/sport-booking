@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: sporthub
+resources:
+  - ../../base
+images:
+  - name: registry-01.cloud.cmctelecom.vn/PROJECT/sporthub-backend
+    newName: registry-01.cloud.cmctelecom.vn/REPLACE_PROJECT/sporthub-backend
+    newTag: 1.1.0
+  - name: registry-01.cloud.cmctelecom.vn/PROJECT/sporthub-frontend
+    newName: registry-01.cloud.cmctelecom.vn/REPLACE_PROJECT/sporthub-frontend
+    newTag: 1.1.0
+patches:
+  - target:
+      kind: Ingress
+      name: sporthub
+    patch: |-
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: sport.REPLACE_DOMAIN.vn
+      - op: replace
+        path: /spec/rules/0/host
+        value: sport.REPLACE_DOMAIN.vn
+  - target:
+      kind: ConfigMap
+      name: sporthub-config
+    patch: |-
+      - op: replace
+        path: /data/CORS_ORIGIN
+        value: https://sport.REPLACE_DOMAIN.vn

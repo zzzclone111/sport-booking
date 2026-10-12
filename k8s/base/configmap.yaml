@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sporthub-config
+  namespace: sporthub
+data:
+  NODE_ENV: production
+  PORT: "3000"
+  DB_POOL_MAX: "15"
+  DATABASE_SSL: "false"
+  JWT_EXPIRES_IN: 8h
+  CORS_ORIGIN: https://sport.example.com
+  LOG_LEVEL: info

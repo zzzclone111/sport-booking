@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sporthub
+  namespace: sporthub
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 6m
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [sport.example.com]
+      secretName: sporthub-tls
+  rules:
+    - host: sport.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service: { name: backend, port: { number: 3000 } }
+          - path: /health
+            pathType: Prefix
+            backend:
+              service: { name: backend, port: { number: 3000 } }
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: frontend, port: { number: 8080 } }

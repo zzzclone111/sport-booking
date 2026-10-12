@@ -1,0 +1,36 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: sporthub
+resources:
+  - ../../base
+images:
+  - name: registry-01.cloud.cmctelecom.vn/PROJECT/sporthub-backend
+    newName: zzzdocker1/sporthub-backend
+    newTag: 1.1.5
+  - name: registry-01.cloud.cmctelecom.vn/PROJECT/sporthub-frontend
+    newName: zzzdocker1/sporthub-frontend
+    newTag: 1.1.5
+patches:
+  - target:
+      kind: Ingress
+      name: sporthub
+    patch: |-
+      - op: remove
+        path: /spec/rules/0/host
+      - op: remove
+        path: /spec/tls
+      - op: replace
+        path: /metadata/annotations/nginx.ingress.kubernetes.io~1ssl-redirect
+        value: "false"
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/imagePullSecrets
+  - target:
+      kind: ConfigMap
+      name: sporthub-config
+    patch: |-
+      - op: replace
+        path: /data/CORS_ORIGIN
+        value: "http://localhost:8080"
