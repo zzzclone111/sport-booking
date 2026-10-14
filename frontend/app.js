@@ -393,7 +393,7 @@ async function loadCourts(reset = false) {
     $("#venueGrid").innerHTML = data.items
       .map(
         (c) =>
-          `<article class="venue-card"><div class="venue-image">${photo(c.image_url)}<div class="sport-tags"><span>${esc(c.sport_type)}</span></div></div><div class="venue-body"><h3>${esc(c.name)}</h3><strong>${esc(c.venue_name)}</strong><p class="venue-location">⌖ ${esc(c.address)}, ${esc(c.district)}, ${esc(c.city)}</p><div class="venue-meta"><span>${esc(c.surface || "Sân thể thao")}</span><span>${esc(c.open_time.slice(0, 5))}–${esc(c.close_time.slice(0, 5))}</span></div><div class="venue-bottom"><div class="price"><strong>${money(c.quote?.totalAmount ?? c.price_per_hour)}</strong><br><span>${c.quote ? "tổng khung giờ chọn" : "giá cơ bản / giờ"}</span></div><button class="button button-primary button-small" data-action="schedule" data-venue="${c.venue_id}" data-court="${c.id}">Xem lịch →</button></div></div></article>`,
+          `<article class="venue-card"><div class="venue-image">${photo(c.image_url)}<div class="sport-tags"><span>${esc(c.sport_type)}</span></div></div><div class="venue-body"><h3>${esc(c.name)}</h3><strong>${esc(c.venue_name)}</strong><p class="venue-location">⌖ ${esc(formatAddress(c.address, c.district, c.city))}</p><div class="venue-meta"><span>${esc(c.surface || "Sân thể thao")}</span><span>${esc(c.open_time.slice(0, 5))}–${esc(c.close_time.slice(0, 5))}</span></div><div class="venue-bottom"><div class="price"><strong>${money(c.quote?.totalAmount ?? c.price_per_hour)}</strong><br><span>${c.quote ? "tổng khung giờ chọn" : "giá cơ bản / giờ"}</span></div><button class="button button-primary button-small" data-action="schedule" data-venue="${c.venue_id}" data-court="${c.id}">Xem lịch →</button></div></div></article>`,
       )
       .join("");
     const pages = Math.ceil(data.pagination.total / data.pagination.limit);
@@ -594,7 +594,7 @@ function renderSchedule() {
   const selected =
     d.schedule.courts.find((c) => c.id === d.courtId) || d.schedule.courts[0];
   $("#detailContent").innerHTML =
-    `<span class="eyebrow dark">${d.owner ? "QUẢN LÝ CỤM SÂN" : "LỊCH SÂN"}</span><h2 id="detailTitle">${esc(v.name)} ${badge(v.status)}</h2><p>${esc(v.address)}, ${esc(v.district)}, ${esc(v.city)}</p><p class="muted">${esc(v.description || "")} · ${esc(v.amenities.join(" · "))}</p>
+    `<span class="eyebrow dark">${d.owner ? "QUẢN LÝ CỤM SÂN" : "LỊCH SÂN"}</span><h2 id="detailTitle">${esc(v.name)} ${badge(v.status)}</h2><p>${esc(formatAddress(v.address, v.district, v.city))}</p><p class="muted">${esc(v.description || "")} · ${esc(v.amenities.join(" · "))}</p>
   ${d.owner ? `<div class="action-row"><button class="button button-ghost" data-action="edit-venue">Sửa thông tin cụm sân</button><button class="button button-primary" data-action="new-court">+ Thêm sân</button>${v.status === "REJECTED" ? '<button class="button button-primary" data-action="resubmit">Gửi lại kiểm duyệt</button>' : ""}</div>${v.review_note ? `<p class="form-error">Phản hồi kiểm duyệt: ${esc(v.review_note)}</p>` : ""}` : ""}
   <div class="schedule-tools"><div class="action-row"><button class="button button-ghost button-small" data-action="prev-day">←</button><label>Ngày chơi<input id="scheduleDate" type="date" value="${d.date}" ${d.owner ? "" : `min="${localDate()}"`}></label><button class="button button-ghost button-small" data-action="next-day">→</button><button class="button button-ghost button-small" data-action="refresh-schedule">Làm mới</button></div><div class="tabs"><button class="button ${state.calendarMode === "day" ? "button-primary" : "button-ghost"}" data-action="calendar-day">Timeline ngày</button><button class="button ${state.calendarMode === "week" ? "button-primary" : "button-ghost"}" data-action="calendar-week">Lịch 7 ngày</button></div></div>
   <div class="legend">${["AVAILABLE", "PENDING", "CONFIRMED", "BLOCKED", "PAST"].map((s) => `<span><i class="slot-${s}"></i>${s === "BLOCKED" ? "Chủ sân khóa" : statuses[s]}</span>`).join("")}</div><p class="muted">Mỗi ô 30 phút; số tiền trên ô là giá 30 phút. Nhấn ô bắt đầu rồi ô cuối để chọn một khoảng liên tục.</p>
@@ -893,7 +893,7 @@ async function loadOwner() {
     ? venues.items
         .map(
           (v) =>
-            `<div class="stack-item"><div><h4>${esc(v.name)} ${badge(v.status)}</h4><p>${esc(v.address)}, ${esc(v.district)} · ${v.court_count} sân</p>${v.review_note ? `<small class="form-error">${esc(v.review_note)}</small>` : ""}</div><button class="button button-primary button-small" data-action="owner-schedule" data-venue="${v.id}">Quản lý & xem lịch</button></div>`,
+            `<div class="stack-item"><div><h4>${esc(v.name)} ${badge(v.status)}</h4><p>${esc(formatAddress(v.address, v.district))} · ${v.court_count} sân</p>${v.review_note ? `<small class="form-error">${esc(v.review_note)}</small>` : ""}</div><button class="button button-primary button-small" data-action="owner-schedule" data-venue="${v.id}">Quản lý & xem lịch</button></div>`,
         )
         .join("")
     : empty("Chưa có cụm sân. Nhấn “Đăng ký cụm sân” để bắt đầu.");
@@ -902,7 +902,7 @@ async function loadOwner() {
     : empty("Không có lịch phù hợp.");
 }
 function adminVenueRow(v) {
-  return `<div class="stack-item"><div><h4>${esc(v.name)} ${badge(v.status)}</h4><p>${esc(v.owner_name)} · ${esc(v.district)}, ${esc(v.city)} · ${v.court_count} sân</p></div><button class="button button-ghost button-small" data-action="review" data-id="${v.id}">Xem hồ sơ</button></div>`;
+  return `<div class="stack-item"><div><h4>${esc(v.name)} ${badge(v.status)}</h4><p>${esc(v.owner_name)} · ${esc(formatAddress(v.district, v.city))} · ${v.court_count} sân</p></div><button class="button button-ghost button-small" data-action="review" data-id="${v.id}">Xem hồ sơ</button></div>`;
 }
 async function loadAdmin() {
   const [stats, venues, users] = await Promise.all([
@@ -935,7 +935,7 @@ async function openReview(id) {
   const v = await api(`/api/admin/venues/${id}`);
   showEditor(
     `Hồ sơ · ${v.name}`,
-    `${photo(v.image_url, "review-image")}<div class="review-details"><h3>${esc(v.name)} ${badge(v.status)}</h3><p>Chủ sân: ${esc(v.owner_name)} · ${esc(v.owner_email)}</p><p>${esc(v.address)}, ${esc(v.ward || "")}, ${esc(v.city)}</p><p>${esc(v.description || "")}</p><p>Giờ mở cửa: ${v.open_time.slice(0, 5)}–${v.close_time.slice(0, 5)}</p><p>Tiện ích: ${esc(v.amenities.join(", "))}</p>${v.review_note ? `<p>Phản hồi: ${esc(v.review_note)}</p>` : ""}</div><h3>Các sân đăng ký (${v.courts.length})</h3>${v.courts.map((c) => `<div class="court-draft">${courtGallery(c, v)}<h3>${esc(c.name)}</h3><p>${esc(c.sport_type)} · ${esc(c.surface || "")} · ${esc(c.description || "")}</p>${rulesMarkup(c)}</div>`).join("")}<form id="reviewEditor"><label>Nhận xét / lý do từ chối<textarea name="reviewNote" maxlength="1000"></textarea></label><div class="action-row">${v.status === "PENDING" ? '<button name="decision" value="ACTIVE" class="button button-primary">Duyệt cụm sân</button><button name="decision" value="REJECTED" class="button button-danger">Từ chối</button>' : v.status === "ACTIVE" ? '<button name="decision" value="INACTIVE" class="button button-danger">Tạm dừng</button>' : v.status === "INACTIVE" ? '<button name="decision" value="ACTIVE" class="button button-primary">Kích hoạt lại</button>' : '<p class="muted">Chủ sân cần sửa hồ sơ và gửi lại để kiểm duyệt.</p>'}</div></form>`,
+    `${photo(v.image_url, "review-image")}<div class="review-details"><h3>${esc(v.name)} ${badge(v.status)}</h3><p>Chủ sân: ${esc(v.owner_name)} · ${esc(v.owner_email)}</p><p>${esc(formatAddress(v.address, v.ward, v.district, v.city))}</p><p>${esc(v.description || "")}</p><p>Giờ mở cửa: ${v.open_time.slice(0, 5)}–${v.close_time.slice(0, 5)}</p><p>Tiện ích: ${esc(v.amenities.join(", "))}</p>${v.review_note ? `<p>Phản hồi: ${esc(v.review_note)}</p>` : ""}</div><h3>Các sân đăng ký (${v.courts.length})</h3>${v.courts.map((c) => `<div class="court-draft">${courtGallery(c, v)}<h3>${esc(c.name)}</h3><p>${esc(c.sport_type)} · ${esc(c.surface || "")} · ${esc(c.description || "")}</p>${rulesMarkup(c)}</div>`).join("")}<form id="reviewEditor"><label>Nhận xét / lý do từ chối<textarea name="reviewNote" maxlength="1000"></textarea></label><div class="action-row">${v.status === "PENDING" ? '<button name="decision" value="ACTIVE" class="button button-primary">Duyệt cụm sân</button><button name="decision" value="REJECTED" class="button button-danger">Từ chối</button>' : v.status === "ACTIVE" ? '<button name="decision" value="INACTIVE" class="button button-danger">Tạm dừng</button>' : v.status === "INACTIVE" ? '<button name="decision" value="ACTIVE" class="button button-primary">Kích hoạt lại</button>' : '<p class="muted">Chủ sân cần sửa hồ sơ và gửi lại để kiểm duyệt.</p>'}</div></form>`,
     { kind: "review", id },
   );
 }
