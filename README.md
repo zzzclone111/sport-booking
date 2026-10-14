@@ -1,9 +1,5 @@
 # SportHub — nền tảng booking sân thể thao
 
-Bản 1.1.0: timeline 30 phút/ngày/7 ngày, tìm từng sân trống theo khoảng giờ, giá theo khung, lịch thuê trực tiếp/khóa lịch, đăng ký chủ sân và kiểm duyệt hồ sơ. Hướng dẫn nâng cấp cụm hiện tại ở [UPGRADE-1.1.0.md](UPGRADE-1.1.0.md).
-
-Full-stack theo các use case: người thuê tìm/xem lịch/đặt/hủy sân; chủ sân quản lý thông tin, duyệt yêu cầu, xem lịch sử và doanh thu; quản trị viên quản lý người dùng, kiểm duyệt cụm sân và xem thống kê.
-
 ## Kiến trúc
 
 ```mermaid
@@ -13,7 +9,6 @@ flowchart LR
   ELB --> BE[Backend pods\nNode.js + Express]
   FE --> BE
   BE --> RDS[(CMC RDS\nPostgreSQL)]
-  BE -. tùy chọn .-> Redis[(Redis)]
 ```
 
 - Frontend và backend chạy thành Deployment riêng, mỗi bên mặc định 2 replica.
@@ -29,21 +24,11 @@ flowchart LR
 backend/               Express API, migration, seed, tests
 frontend/              HTML/CSS/JavaScript thuần + Nginx
 k8s/base/              Manifest dùng chung
-k8s/overlays/cmc/      Overlay image registry/domain cho CMC Cloud
+k8s/overlays/lab/      Overlay image registry/domain
 docker-compose.yml     Môi trường local có PostgreSQL
 ```
 
-## Chạy local
-
-Yêu cầu Docker + Docker Compose:
-
-```bash
-cp .env.example .env
-docker compose up --build
-```
-
-Mở <http://localhost:8080>. Compose tự tạo schema và dữ liệu demo.
-
+Các tài khoản seed:
 | Vai trò | Email | Mật khẩu |
 |---|---|---|
 | Người thuê | `renter@sporthub.vn` | `SportHub@123` |
@@ -68,54 +53,37 @@ Các tài khoản này chỉ phục vụ demo; không chạy seed job hoặc ph�
 
 1. Tạo VPC và các subnet theo sơ đồ: application subnet cho worker node, isolated/private subnet cho RDS, management subnet cho bastion nếu cần.
 2. Tạo CMC Kubernetes cluster trong cùng VPC; production nên chọn 3 master và ít nhất 2 worker phân bố hợp lý giữa AZ.
-3. Tạo CMC RDS for PostgreSQL (khuyến nghị PostgreSQL 16, HA Cluster cho production, PITR bật), database `sporthub` và user ứng dụng riêng.
+3. Tạo CMC RDS for PostgreSQL, database `sporthub` và user ứng dụng riêng.
 4. Security Group của RDS chỉ cho phép TCP cổng PostgreSQL từ CIDR node/pod của cluster. Không mở RDS ra Internet.
-5. Tạo hai repository trong CMC Container Registry.
 
 Migration cần quyền `CREATE EXTENSION` cho `pgcrypto` và `btree_gist`. Có thể chạy bằng tài khoản admin lần đầu, sau đó chuyển `DATABASE_URL` sang user ứng dụng chỉ có quyền trên schema/tables.
 
-### 2. Build và push image
+### 2. Cấu hình Kubernetes
 
-Lấy chính xác URL repository trên CMC Portal, rồi:
-
-```bash
-export CMC_REGISTRY=registry-01.cloud.cmctelecom.vn/REPLACE_PROJECT
-docker login registry-01.cloud.cmctelecom.vn
-docker build -t "$CMC_REGISTRY/sporthub-backend:1.1.0" backend
-docker build -t "$CMC_REGISTRY/sporthub-frontend:1.1.0" frontend
-docker push "$CMC_REGISTRY/sporthub-backend:1.1.0"
-docker push "$CMC_REGISTRY/sporthub-frontend:1.1.0"
-```
-
-### 3. Cấu hình Kubernetes
-
-Sửa ba placeholder trong `k8s/overlays/cmc/kustomization.yaml`: `REPLACE_PROJECT`, `sport.REPLACE_DOMAIN.vn`, và tag nếu cần. Sau đó tạo registry secret, application secret và TLS secret:
+Tùy chỉnh trong /k8s/overlays/lab/kustomization.yaml sau đó tạo các secret tương ứng.
 
 ```bash
 kubectl apply -f k8s/base/namespace.yaml
-
-kubectl -n sporthub create secret docker-registry cmc-registry \
-  --docker-server=registry-01.cloud.cmctelecom.vn \
-  --docker-username='<CMC_TOKEN_USER>' \
-  --docker-password='<CMC_TOKEN>'
 
 kubectl -n sporthub create secret generic sporthub-secrets \
   --from-literal=DATABASE_URL='postgresql://sporthub:<PASSWORD>@<RDS_PRIVATE_IP>:5432/sporthub' \
   --from-literal=JWT_SECRET="$(openssl rand -base64 48)" \
   --from-literal=REDIS_URL=''
 
-kubectl -n sporthub create secret tls sporthub-tls \
-  --cert=fullchain.pem --key=privkey.pem
+kubectl -n sporthub create secret generic sporthub-s3 \
+  --from-literal=S3_ACCESS_KEY_ID='<S3_ACCESS_KEY>' \
+  --from-literal=S3_BUCKET='<BUCKET_NAME>' \
+  --from-literal=S3_ENDPOINT='<S3_ENDPOINT>' \
+  --from-literal=S3_REGION='<S3_REGION>' \
+  --from-literal=S3_SECRET_ACCESS_KEY='<S3_SECRET_ACCESS_KEY>'
 ```
 
-Không commit `secret.yaml` hoặc chuỗi kết nối RDS vào Git. Với pipeline thật, nên dùng secret manager/external-secrets.
-
-### 4. Apply và kiểm tra
+### 3. Apply và kiểm tra
 
 Cluster cần có NGINX Ingress Controller và Metrics Server trước khi HPA hoạt động.
 
 ```bash
-kubectl apply -k k8s/overlays/cmc
+kubectl apply -k k8s/overlays/lab
 kubectl -n sporthub rollout status deployment/backend
 kubectl -n sporthub rollout status deployment/frontend
 kubectl -n sporthub get pods,svc,ingress,hpa
@@ -151,5 +119,3 @@ cd backend
 npm ci
 npm test
 ```
-
-Test gồm liveness, JSON errors, tính giá theo ngày/khung giờ, migration với PostgreSQL nhúng (PGlite), đăng ký/kiểm duyệt, phân quyền, chống trùng lịch online/thủ công và thao tác frontend nối API bằng jsdom. Kiểm tra Docker/Kubernetes thực tế theo UPGRADE-1.1.0.md.
