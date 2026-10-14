@@ -449,7 +449,13 @@ async function openSchedule(
       (slot) => slot.endTime === search.endTime,
     );
 
-    if (first >= 0 && last >= first) {
+    if (
+      first >= 0 &&
+      last >= first &&
+      court.slots
+        .slice(first, last + 1)
+        .every((slot) => isSelectableSlot(slot, date))
+    ) {
       focusIndex = first;
 
       try {
@@ -534,7 +540,7 @@ function reconcileSelection(day) {
   if (!s || !day || s.date !== day.date) return;
   const c = day.courts.find(c => c.id === s.courtId);
   if (!c || !c.active || c.slots.slice(s.first, s.last + 1).some(slot =>
-    !["AVAILABLE", ...(state.detail.owner ? ["PAST"] : [])].includes(slot.status))) {
+    !isSelectableSlot(slot, day.date, state.detail.owner))) {
     state.selection = null;
   }
 }
@@ -551,6 +557,17 @@ async function loadWeek() {
   reconcileSelection(days.find(day => day.date === state.selection?.date));
   renderSchedule();
 }
+function isPastSlot(slot, date) {
+  if (slot.status === "PAST") return true;
+  const startsAt = slot.startsAt || (date && iso(date, slot.startTime));
+  return startsAt ? new Date(startsAt).getTime() <= Date.now() : false;
+}
+function isSelectableSlot(slot, date, owner = false) {
+  return (
+    (slot.status === "AVAILABLE" || (owner && slot.status === "PAST")) &&
+    (owner || !isPastSlot(slot, date))
+  );
+}
 function slotButton(slot, index, court, date) {
   const d = state.detail,
     s = state.selection,
@@ -560,8 +577,7 @@ function slotButton(slot, index, court, date) {
       s.date === date &&
       index >= s.first &&
       index <= s.last;
-  const canSelect =
-    slot.status === "AVAILABLE" || (d.owner && slot.status === "PAST");
+  const canSelect = isSelectableSlot(slot, date, d.owner);
   const canEdit = d.owner && slot.bookingId;
   return `<button class="slot slot-${slot.status}${selected ? " selected" : ""}" data-action="slot" data-court="${court.id}" data-date="${date}" data-index="${index}" ${!canSelect && !canEdit ? "disabled" : ""} title="${esc(`${slot.startTime}–${slot.endTime} · ${statuses[slot.status]} · ${money(slot.pricePerHour)}/giờ`)}" aria-pressed="${!!selected}"><strong>${slot.startTime}</strong><span>${statuses[slot.status]}</span><small>${money(slot.pricePerHour / 2)}</small></button>`;
 }
@@ -640,6 +656,10 @@ async function chooseSlot(button) {
   }
   if (!c.active || d.venue.status !== "ACTIVE") {
     toast("Sân chưa hoạt động hoặc chưa được kiểm duyệt.", true);
+    return;
+  }
+  if (!d.owner && !isSelectableSlot(slot, date)) {
+    toast("Khung giờ này đã bắt đầu hoặc không còn trống.", true);
     return;
   }
   const previous = state.selection,
@@ -1261,6 +1281,7 @@ document.addEventListener("submit", (event) => {
   }, button);
 });
 useHalfHourSelects();
+$("#dateFilter").min = localDate();
 updateAuth();
 guard(() => loadCourts());
 if (state.token)
